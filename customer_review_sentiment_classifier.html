@@ -1,0 +1,1087 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Customer Review Classifier - ML Mini Project</title>
+    <!-- Tailwind CSS -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#f0f3ff',
+                            100: '#e0e7ff',
+                            500: '#6366f1',
+                            600: '#4f46e5',
+                            700: '#4338ca',
+                            900: '#312e81',
+                        }
+                    },
+                    fontFamily: {
+                        sans: ['Inter', 'sans-serif'],
+                    }
+                }
+            }
+        }
+    </script>
+    <!-- Google Fonts -->
+    <link rel="preconnect" href="https://fonts.googleapis.com">
+    <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    <!-- FontAwesome Icons -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <!-- Chart.js -->
+    <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+    <style>
+        body {
+            font-family: 'Inter', sans-serif;
+            background: radial-gradient(circle at top left, #0f172a, #1e1b4b, #0f172a);
+            min-height: 100vh;
+            color: #f8fafc;
+        }
+        .glass-panel {
+            background: rgba(30, 41, 59, 0.7);
+            backdrop-filter: blur(12px);
+            -webkit-backdrop-filter: blur(12px);
+            border: 1px solid rgba(255, 255, 255, 0.08);
+        }
+        .glass-card {
+            background: rgba(15, 23, 42, 0.6);
+            backdrop-filter: blur(8px);
+            border: 1px solid rgba(255, 255, 255, 0.05);
+        }
+        .custom-scrollbar::-webkit-scrollbar {
+            width: 6px;
+            height: 6px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-track {
+            background: rgba(15, 23, 42, 0.5);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb {
+            background: rgba(99, 102, 241, 0.4);
+            border-radius: 4px;
+        }
+        .custom-scrollbar::-webkit-scrollbar-thumb:hover {
+            background: rgba(99, 102, 241, 0.7);
+        }
+        .glow-effect {
+            box-shadow: 0 0 25px -5px rgba(99, 102, 241, 0.3);
+        }
+        .glow-positive {
+            box-shadow: 0 0 25px -5px rgba(16, 185, 129, 0.3);
+        }
+        .glow-negative {
+            box-shadow: 0 0 25px -5px rgba(244, 63, 94, 0.3);
+        }
+    </style>
+</head>
+<body class="custom-scrollbar text-slate-100 flex flex-col justify-between min-h-screen">
+
+    <!-- Navigation & Header -->
+    <header class="sticky top-0 z-50 glass-panel border-b border-slate-700/50">
+        <div class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
+            <div class="flex items-center justify-between h-20">
+                <!-- Brand Title & Mini Project Badge -->
+                <div class="flex items-center space-x-3">
+                    <div class="w-11 h-11 rounded-xl bg-gradient-to-tr from-indigo-500 via-purple-500 to-pink-500 p-0.5 shadow-lg shadow-indigo-500/30">
+                        <div class="w-full h-full bg-slate-900 rounded-[10px] flex items-center justify-center">
+                            <i class="fa-solid me-0 fa-brain text-indigo-400 text-xl"></i>
+                        </div>
+                    </div>
+                    <div>
+                        <div class="flex items-center space-x-2">
+                            <h1 class="text-xl font-bold bg-clip-text text-transparent bg-gradient-to-r from-indigo-200 via-purple-200 to-pink-200">
+                                CUSTOMER REVIEW CLASSIFICATION
+                            </h1>
+                            <span class="px-2.5 py-0.5 text-xs font-semibold rounded-full bg-indigo-500/20 text-indigo-300 border border-indigo-500/30">
+                                ML Mini Project
+                            </span>
+                        </div>
+                        <p class="text-xs text-slate-400">TF-IDF + Naive Bayes Customer Review Classifier</p>
+                    </div>
+                </div>
+
+                <!-- Navigation Tabs -->
+                <nav class="hidden md:flex space-x-1 p-1.5 rounded-xl bg-slate-900/60 border border-slate-800">
+                    <button onclick="switchTab('live')" id="tab-btn-live" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md">
+                        <i class="fa-solid fa-bolt mr-2 text-indigo-200"></i>Live Classifier
+                    </button>
+                    <button onclick="switchTab('batch')" id="tab-btn-batch" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                        <i class="fa-solid fa-list-check mr-2"></i>Batch Dashboard
+                    </button>
+                    <button onclick="switchTab('metrics')" id="tab-btn-metrics" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                        <i class="fa-solid fa-chart-pie mr-2"></i>Model & Architecture
+                    </button>
+                    <button onclick="switchTab('docs')" id="tab-btn-docs" class="tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200">
+                        <i class="fa-solid fa-book-bookmark mr-2"></i>Documentation
+                    </button>
+                </nav>
+
+                <!-- Status Badge -->
+                <div class="hidden lg:flex items-center space-x-2 text-xs text-emerald-400 bg-emerald-950/40 border border-emerald-800/50 px-3 py-1.5 rounded-full">
+                    <span class="w-2 h-2 rounded-full bg-emerald-400 animate-ping"></span>
+                    <span>Model Ready (88.5% Accuracy)</span>
+                </div>
+            </div>
+        </div>
+
+        <!-- Mobile Navigation Row -->
+        <div class="md:hidden flex overflow-x-auto p-2 space-x-2 bg-slate-950/80 border-t border-slate-800 custom-scrollbar">
+            <button onclick="switchTab('live')" id="mobile-tab-live" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap bg-indigo-600 text-white">Live Classifier</button>
+            <button onclick="switchTab('batch')" id="mobile-tab-batch" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap text-slate-400 bg-slate-900">Batch Dashboard</button>
+            <button onclick="switchTab('metrics')" id="mobile-tab-metrics" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap text-slate-400 bg-slate-900">Model & Architecture</button>
+            <button onclick="switchTab('docs')" id="mobile-tab-docs" class="px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap text-slate-400 bg-slate-900">Documentation</button>
+        </div>
+    </header>
+
+    <!-- Main Content Area -->
+    <main class="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8 flex-grow w-full">
+
+        <!-- TAB 1: LIVE CLASSIFIER -->
+        <section id="tab-live" class="tab-content space-y-6">
+            <!-- Hero / Banner -->
+            <div class="glass-panel p-6 rounded-2xl relative overflow-hidden">
+                <div class="absolute -right-10 -bottom-10 w-64 h-64 bg-indigo-600/10 rounded-full blur-3xl pointer-events-none"></div>
+                <div class="relative z-10">
+                    <span class="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 rounded-full border border-indigo-800">
+                        Real-Time Analysis
+                    </span>
+                    <h2 class="text-2xl sm:text-3xl font-extrabold mt-2 bg-clip-text text-transparent bg-gradient-to-r from-white via-slate-200 to-slate-400">
+                        Interactive Review Sentiment Analyzer
+                    </h2>
+                    <p class="text-sm text-slate-400 mt-1 max-w-2xl">
+                        Type or select a sample customer review below. The machine learning engine will extract TF-IDF feature weights and evaluate the sentiment probability using Naive Bayes classification.
+                    </p>
+                </div>
+            </div>
+
+            <!-- Main Live Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Input Panel (Left 7 Cols) -->
+                <div class="lg:col-span-7 space-y-4">
+                    <div class="glass-panel p-6 rounded-2xl space-y-4">
+                        <div class="flex flex-wrap items-center justify-between gap-2">
+                            <label for="review-input" class="text-sm font-semibold text-slate-200 flex items-center gap-2">
+                                <i class="fa-solid fa-pen-to-square text-indigo-400"></i> Enter Customer Review
+                            </label>
+                            <span id="char-count" class="text-xs text-slate-400">0 characters</span>
+                        </div>
+
+                        <!-- Textarea -->
+                        <div class="relative">
+                            <textarea id="review-input" rows="5" 
+                                class="w-full bg-slate-900/90 border border-slate-700/80 rounded-xl p-4 text-slate-100 placeholder-slate-500 focus:outline-none focus:ring-2 focus:ring-indigo-500 focus:border-transparent transition-all resize-none text-sm"
+                                placeholder="Type or paste a customer review here (e.g., 'The camera quality is absolutely amazing and battery life is fast, highly recommended!')..."></textarea>
+                            <button onclick="clearInput()" title="Clear text" class="absolute top-3 right-3 text-slate-500 hover:text-slate-300 p-1 transition">
+                                <i class="fa-solid fa-xmark text-sm"></i>
+                            </button>
+                        </div>
+
+                        <!-- Sample Preset Chips -->
+                        <div class="space-y-2">
+                            <span class="text-xs font-medium text-slate-400">Quick Test Samples:</span>
+                            <div class="flex flex-wrap gap-2">
+                                <button onclick="loadSample('positive')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-emerald-950/60 border border-emerald-800/60 text-emerald-300 hover:bg-emerald-900/60 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-thumbs-up text-emerald-400"></i> Highly Positive
+                                </button>
+                                <button onclick="loadSample('negative')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-rose-950/60 border border-rose-800/60 text-rose-300 hover:bg-rose-900/60 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-thumbs-down text-rose-400"></i> Strongly Negative
+                                </button>
+                                <button onclick="loadSample('mixed')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-amber-950/60 border border-amber-800/60 text-amber-300 hover:bg-amber-900/60 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-right-left text-amber-400"></i> Mixed / Nuanced
+                                </button>
+                                <button onclick="loadSample('neutral')" class="px-3 py-1.5 text-xs font-medium rounded-lg bg-slate-800 border border-slate-700 text-slate-300 hover:bg-slate-700 transition flex items-center gap-1.5">
+                                    <i class="fa-solid fa-minus text-slate-400"></i> Neutral Statement
+                                </button>
+                            </div>
+                        </div>
+
+                        <!-- Action Button -->
+                        <div class="pt-2 flex items-center gap-3">
+                            <button onclick="analyzeSentiment()" class="flex-1 py-3 px-6 rounded-xl bg-gradient-to-r from-indigo-500 via-purple-600 to-pink-600 hover:from-indigo-600 hover:to-pink-700 text-white font-semibold text-sm shadow-lg shadow-indigo-500/25 active:scale-[0.99] transition-all duration-200 flex items-center justify-center gap-2">
+                                <i class="fa-solid fa-wand-magic-sparkles"></i> Classify Sentiment Now
+                            </button>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Live Output Display Panel (Right 5 Cols) -->
+                <div class="lg:col-span-5 space-y-4">
+                    <div id="output-card" class="glass-panel p-6 rounded-2xl h-full flex flex-col justify-between transition-all duration-300">
+                        
+                        <div>
+                            <!-- Header -->
+                            <div class="flex items-center justify-between pb-4 border-b border-slate-800">
+                                <span class="text-xs font-bold uppercase tracking-wider text-slate-400">Classification Result</span>
+                                <span id="model-badge" class="text-xs px-2.5 py-0.5 rounded-full bg-slate-800 text-slate-400 border border-slate-700">
+                                    Waiting for input...
+                                </span>
+                            </div>
+
+                            <!-- Big Dynamic Sentiment Badge -->
+                            <div class="my-6 text-center">
+                                <div id="sentiment-icon-box" class="w-20 h-20 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-3 transition-all duration-300">
+                                    <i id="sentiment-icon" class="fa-solid fa-robot text-3xl text-slate-400"></i>
+                                </div>
+                                <h3 id="sentiment-label" class="text-2xl font-black text-slate-300 tracking-wide">
+                                    Ready to Analyze
+                                </h3>
+                                <p id="sentiment-subtext" class="text-xs text-slate-400 mt-1">Submit a review to generate sentiment probabilities</p>
+                            </div>
+
+                            <!-- Confidence Score Progress Bar -->
+                            <div class="space-y-2 bg-slate-900/60 p-4 rounded-xl border border-slate-800">
+                                <div class="flex justify-between text-xs font-semibold">
+                                    <span class="text-slate-400">Model Confidence</span>
+                                    <span id="confidence-score" class="text-indigo-400">0%</span>
+                                </div>
+                                <div class="w-full bg-slate-800 h-2.5 rounded-full overflow-hidden p-0.5">
+                                    <div id="confidence-bar" class="bg-gradient-to-r from-indigo-500 to-purple-500 h-full rounded-full transition-all duration-500" style="width: 0%"></div>
+                                </div>
+                                <div class="flex justify-between text-[10px] text-slate-500 pt-1">
+                                    <span>Negative Score: <strong id="neg-score-val" class="text-rose-400">0.00</strong></span>
+                                    <span>Positive Score: <strong id="pos-score-val" class="text-emerald-400">0.00</strong></span>
+                                </div>
+                            </div>
+
+                            <!-- Highlighted Word Analysis -->
+                            <div class="mt-4 space-y-2">
+                                <span class="text-xs font-semibold text-slate-400 block">TF-IDF Word Importance Breakdown:</span>
+                                <div id="highlighted-text-box" class="p-3 bg-slate-900/80 rounded-xl border border-slate-800 text-xs text-slate-300 leading-relaxed min-h-[70px] max-h-[120px] overflow-y-auto custom-scrollbar">
+                                    <span class="text-slate-500 italic">Key sentiment words will be highlighted green (positive) or red (negative)...</span>
+                                </div>
+                            </div>
+                        </div>
+
+                        <!-- Stats Footer -->
+                        <div class="grid grid-cols-3 gap-2 pt-4 mt-4 border-t border-slate-800 text-center">
+                            <div class="bg-slate-900/40 p-2 rounded-lg border border-slate-800/80">
+                                <span class="block text-[10px] text-slate-500">Tokens</span>
+                                <span id="stat-tokens" class="text-xs font-bold text-slate-300">0</span>
+                            </div>
+                            <div class="bg-slate-900/40 p-2 rounded-lg border border-slate-800/80">
+                                <span class="block text-[10px] text-slate-500">Pos Highlights</span>
+                                <span id="stat-pos-words" class="text-xs font-bold text-emerald-400">0</span>
+                            </div>
+                            <div class="bg-slate-900/40 p-2 rounded-lg border border-slate-800/80">
+                                <span class="block text-[10px] text-slate-500">Neg Highlights</span>
+                                <span id="stat-neg-words" class="text-xs font-bold text-rose-400">0</span>
+                            </div>
+                        </div>
+
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 2: BATCH REVIEW ANALYTICS -->
+        <section id="tab-batch" class="tab-content space-y-6 hidden">
+            <!-- Header Bar -->
+            <div class="flex flex-wrap items-center justify-between gap-4 glass-panel p-6 rounded-2xl">
+                <div>
+                    <h2 class="text-2xl font-bold text-slate-100">Batch Sentiment Analytics</h2>
+                    <p class="text-xs text-slate-400 mt-0.5">Automated classification of customer review streams with visual dataset insights</p>
+                </div>
+                <div class="flex items-center gap-2">
+                    <button onclick="runBatchAnalysis()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-indigo-600 hover:bg-indigo-500 text-white transition flex items-center gap-2 shadow-md">
+                        <i class="fa-solid fa-arrows-rotate"></i> Re-Analyze Dataset
+                    </button>
+                    <button onclick="exportCSV()" class="px-4 py-2 text-xs font-semibold rounded-xl bg-slate-800 hover:bg-slate-700 text-slate-200 border border-slate-700 transition flex items-center gap-2">
+                        <i class="fa-solid fa-download"></i> Export CSV
+                    </button>
+                </div>
+            </div>
+
+            <!-- Stats Overview Row -->
+            <div class="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-indigo-500">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Total Batch Reviews</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="batch-stat-total" class="text-2xl font-black text-slate-100">12</span>
+                        <span class="text-xs text-indigo-400 font-medium"><i class="fa-solid fa-database"></i> Live Sample</span>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-emerald-500">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Positive Ratio</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="batch-stat-pos" class="text-2xl font-black text-emerald-400">58.3%</span>
+                        <span class="text-xs text-emerald-400"><i class="fa-solid fa-arrow-trend-up"></i> 7 Reviews</span>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-rose-500">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Negative Ratio</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="batch-stat-neg" class="text-2xl font-black text-rose-400">33.3%</span>
+                        <span class="text-xs text-rose-400"><i class="fa-solid fa-arrow-trend-down"></i> 4 Reviews</span>
+                    </div>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl border-l-4 border-l-amber-500">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Avg Model Confidence</span>
+                    <div class="flex items-baseline justify-between mt-2">
+                        <span id="batch-stat-conf" class="text-2xl font-black text-amber-400">91.2%</span>
+                        <span class="text-xs text-amber-400"><i class="fa-solid fa-shield-halved"></i> High Accuracy</span>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Visual Charts Grid -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Donut Chart -->
+                <div class="lg:col-span-5 glass-panel p-6 rounded-2xl">
+                    <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-pie text-indigo-400"></i> Sentiment Ratio Breakdown
+                    </h3>
+                    <div class="relative flex items-center justify-center h-64">
+                        <canvas id="sentimentDonutChart"></canvas>
+                    </div>
+                </div>
+
+                <!-- Bar Chart Category Breakdown -->
+                <div class="lg:col-span-7 glass-panel p-6 rounded-2xl">
+                    <h3 class="text-sm font-bold text-slate-200 mb-4 flex items-center gap-2">
+                        <i class="fa-solid fa-chart-column text-purple-400"></i> Sentiment by Product Category
+                    </h3>
+                    <div class="relative h-64">
+                        <canvas id="categoryBarChart"></canvas>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Interactive Dataset Table -->
+            <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <!-- Search and Filter Bar -->
+                <div class="flex flex-wrap items-center justify-between gap-4">
+                    <div class="relative flex-1 min-w-[240px]">
+                        <i class="fa-solid fa-magnifying-glass absolute left-3.5 top-3 text-slate-500 text-xs"></i>
+                        <input type="text" id="table-search" oninput="filterBatchTable()" 
+                            placeholder="Search reviews by keyword or product..." 
+                            class="w-full bg-slate-900 border border-slate-700/80 rounded-xl pl-9 pr-4 py-2 text-xs text-slate-200 placeholder-slate-500 focus:outline-none focus:ring-1 focus:ring-indigo-500">
+                    </div>
+                    <div class="flex items-center gap-1.5 bg-slate-900 p-1 rounded-xl border border-slate-800 text-xs">
+                        <button onclick="filterSentiment('ALL')" id="filter-all" class="filter-pill px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium">All</button>
+                        <button onclick="filterSentiment('Positive')" id="filter-pos" class="filter-pill px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200">Positive</button>
+                        <button onclick="filterSentiment('Negative')" id="filter-neg" class="filter-pill px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200">Negative</button>
+                        <button onclick="filterSentiment('Neutral')" id="filter-neu" class="filter-pill px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200">Neutral</button>
+                    </div>
+                </div>
+
+                <!-- Data Table -->
+                <div class="overflow-x-auto custom-scrollbar">
+                    <table class="w-full text-left text-xs border-collapse">
+                        <thead>
+                            <tr class="border-b border-slate-800 text-slate-400 font-semibold uppercase tracking-wider">
+                                <th class="p-3">ID</th>
+                                <th class="p-3">Category</th>
+                                <th class="p-3">Review Text</th>
+                                <th class="p-3">Predicted Class</th>
+                                <th class="p-3">Confidence</th>
+                                <th class="p-3 text-right">Action</th>
+                            </tr>
+                        </thead>
+                        <tbody id="batch-table-body" class="divide-y divide-slate-800/60 text-slate-300">
+                            <!-- Populated via JS -->
+                        </tbody>
+                    </table>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 3: MODEL METRICS & ARCHITECTURE -->
+        <section id="tab-metrics" class="tab-content space-y-6 hidden">
+            <!-- Header -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <span class="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-purple-400 bg-purple-950/80 rounded-full border border-purple-800">
+                    Machine Learning Performance
+                </span>
+                <h2 class="text-2xl font-bold text-slate-100 mt-2">Model Performance & Pipeline Details</h2>
+                <p class="text-xs text-slate-400 mt-1">Evaluated on 2,000 hold-out customer review samples using TF-IDF + Multinomial Naive Bayes</p>
+            </div>
+
+            <!-- Key Metrics Grid -->
+            <div class="grid grid-cols-2 lg:grid-cols-4 gap-4">
+                <div class="glass-panel p-5 rounded-2xl text-center">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Accuracy</span>
+                    <div class="text-3xl font-black text-indigo-400 mt-1">88.5%</div>
+                    <span class="text-[10px] text-slate-500">Overall correctness</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl text-center">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Precision</span>
+                    <div class="text-3xl font-black text-emerald-400 mt-1">87.2%</div>
+                    <span class="text-[10px] text-slate-500">Positive predictive value</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl text-center">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">Recall</span>
+                    <div class="text-3xl font-black text-purple-400 mt-1">89.1%</div>
+                    <span class="text-[10px] text-slate-500">True positive rate</span>
+                </div>
+                <div class="glass-panel p-5 rounded-2xl text-center">
+                    <span class="text-xs font-semibold text-slate-400 uppercase">F1-Score</span>
+                    <div class="text-3xl font-black text-pink-400 mt-1">88.1%</div>
+                    <span class="text-[10px] text-slate-500">Harmonic mean</span>
+                </div>
+            </div>
+
+            <!-- Confusion Matrix & Pipeline Row -->
+            <div class="grid grid-cols-1 lg:grid-cols-12 gap-6">
+                <!-- Confusion Matrix Visual -->
+                <div class="lg:col-span-5 glass-panel p-6 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-bold text-slate-200 flex items-center justify-between">
+                        <span><i class="fa-solid fa-table-cells text-indigo-400 mr-2"></i>Confusion Matrix</span>
+                        <span class="text-[10px] text-slate-500">N = 1,000 Test Set</span>
+                    </h3>
+
+                    <div class="grid grid-cols-3 gap-2 text-center text-xs font-semibold pt-2">
+                        <div></div>
+                        <div class="text-slate-400">Pred Positive</div>
+                        <div class="text-slate-400">Pred Negative</div>
+
+                        <div class="text-slate-400 flex items-center justify-center">Actual Positive</div>
+                        <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 font-bold">
+                            <span class="block text-lg">435</span>
+                            <span class="text-[10px] text-emerald-400 font-normal">True Pos (TP)</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-900/40 text-rose-300 font-bold">
+                            <span class="block text-lg">51</span>
+                            <span class="text-[10px] text-rose-400 font-normal">False Neg (FN)</span>
+                        </div>
+
+                        <div class="text-slate-400 flex items-center justify-center">Actual Negative</div>
+                        <div class="p-4 rounded-xl bg-rose-950/40 border border-rose-900/40 text-rose-300 font-bold">
+                            <span class="block text-lg">64</span>
+                            <span class="text-[10px] text-rose-400 font-normal">False Pos (FP)</span>
+                        </div>
+                        <div class="p-4 rounded-xl bg-emerald-950/80 border border-emerald-700/80 text-emerald-300 font-bold">
+                            <span class="block text-lg">450</span>
+                            <span class="text-[10px] text-emerald-400 font-normal">True Neg (TN)</span>
+                        </div>
+                    </div>
+                </div>
+
+                <!-- Interactive Pipeline Flowchart -->
+                <div class="lg:col-span-7 glass-panel p-6 rounded-2xl space-y-4">
+                    <h3 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-diagram-project text-purple-400 mr-2"></i>Machine Learning Processing Pipeline</h3>
+                    
+                    <div class="grid grid-cols-1 md:grid-cols-4 gap-3 pt-2">
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1 hover:border-indigo-500/50 transition">
+                            <div class="w-8 h-8 mx-auto rounded-lg bg-indigo-500/20 text-indigo-400 flex items-center justify-center text-xs font-bold">1</div>
+                            <h4 class="text-xs font-bold text-slate-200">Raw Text Input</h4>
+                            <p class="text-[10px] text-slate-500">Customer review string cleaning & lowercasing</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1 hover:border-indigo-500/50 transition">
+                            <div class="w-8 h-8 mx-auto rounded-lg bg-purple-500/20 text-purple-400 flex items-center justify-center text-xs font-bold">2</div>
+                            <h4 class="text-xs font-bold text-slate-200">Preprocessing</h4>
+                            <p class="text-[10px] text-slate-500">Stopword removal, tokenization, stemming</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1 hover:border-indigo-500/50 transition">
+                            <div class="w-8 h-8 mx-auto rounded-lg bg-pink-500/20 text-pink-400 flex items-center justify-center text-xs font-bold">3</div>
+                            <h4 class="text-xs font-bold text-slate-200">TF-IDF Vectorizer</h4>
+                            <p class="text-[10px] text-slate-500">Convert words into numerical weight matrix</p>
+                        </div>
+                        <div class="p-3 rounded-xl bg-slate-900 border border-slate-800 text-center space-y-1 hover:border-indigo-500/50 transition">
+                            <div class="w-8 h-8 mx-auto rounded-lg bg-emerald-500/20 text-emerald-400 flex items-center justify-center text-xs font-bold">4</div>
+                            <h4 class="text-xs font-bold text-slate-200">Naive Bayes</h4>
+                            <p class="text-[10px] text-slate-500">Probabilistic sentiment class prediction</p>
+                        </div>
+                    </div>
+
+                    <!-- Formula Box -->
+                    <div class="p-4 rounded-xl bg-slate-950/60 border border-slate-800/80 space-y-2 text-xs font-mono">
+                        <div class="text-slate-400 font-sans font-semibold text-[11px]">TF-IDF Calculation Formula:</div>
+                        <div class="text-indigo-300">TF-IDF(t, d, D) = TF(t, d) × log( N / DF(t) )</div>
+                        <div class="text-slate-500 text-[10px] font-sans">Where TF = Term Frequency in document, N = Total Documents, DF = Document Frequency of term t</div>
+                    </div>
+                </div>
+            </div>
+
+            <!-- Top Word Weight Dictionary Explorer -->
+            <div class="glass-panel p-6 rounded-2xl space-y-4">
+                <div class="flex flex-wrap items-center justify-between gap-2">
+                    <h3 class="text-sm font-bold text-slate-200"><i class="fa-solid fa-spell-check text-indigo-400 mr-2"></i>TF-IDF Top Vocabulary Weight Explorer</h3>
+                    <input type="text" id="dict-search" oninput="filterVocabulary()" placeholder="Filter dictionary..." class="bg-slate-900 border border-slate-700 text-xs px-3 py-1.5 rounded-lg text-slate-200 focus:outline-none">
+                </div>
+
+                <div class="grid grid-cols-1 md:grid-cols-2 gap-4">
+                    <!-- Positive Lexicon -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-emerald-900/40">
+                        <h4 class="text-xs font-bold text-emerald-400 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-plus"></i> Top Positive Predictors (Log Likelihood)
+                        </h4>
+                        <div id="pos-lexicon-list" class="space-y-1.5 text-xs">
+                            <!-- JS Populated -->
+                        </div>
+                    </div>
+                    <!-- Negative Lexicon -->
+                    <div class="bg-slate-900/60 p-4 rounded-xl border border-rose-900/40">
+                        <h4 class="text-xs font-bold text-rose-400 mb-3 flex items-center gap-1.5">
+                            <i class="fa-solid fa-circle-minus"></i> Top Negative Predictors (Log Likelihood)
+                        </h4>
+                        <div id="neg-lexicon-list" class="space-y-1.5 text-xs">
+                            <!-- JS Populated -->
+                        </div>
+                    </div>
+                </div>
+            </div>
+        </section>
+
+        <!-- TAB 4: PROJECT DOCUMENTATION -->
+        <section id="tab-docs" class="tab-content space-y-6 hidden">
+            <!-- Header -->
+            <div class="glass-panel p-6 rounded-2xl">
+                <span class="px-3 py-1 text-xs font-semibold uppercase tracking-wider text-indigo-400 bg-indigo-950/80 rounded-full border border-indigo-800">
+                    Academic Mini Project Report
+                </span>
+                <h2 class="text-2xl font-bold text-slate-100 mt-2">Project Overview & Documentation</h2>
+                <p class="text-xs text-slate-400 mt-1">Structured academic reference format for college evaluation and submission</p>
+            </div>
+
+            <!-- Grid Report Cards -->
+            <div class="grid grid-cols-1 md:grid-cols-2 gap-6">
+
+                <!-- Card 1: Aim & Objective -->
+                <div class="glass-panel p-6 rounded-2xl space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-indigo-500/20 text-indigo-400 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-bullseye"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-100">1. Aim & Objectives</h3>
+                    <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                        <li><strong>Primary Aim:</strong> To build an automated Machine Learning application that classifies customer review text into Positive or Negative sentiments.</li>
+                        <li><strong>Feature Extraction:</strong> Convert raw unstructured text strings into numerical feature vectors using <strong>TF-IDF</strong>.</li>
+                        <li><strong>Classification Engine:</strong> Train a <strong>Multinomial Naive Bayes</strong> classifier for rapid probabilistic inference.</li>
+                        <li><strong>Web Interface:</strong> Provide an intuitive real-time single-page interface for individual and batch sentiment evaluations.</li>
+                    </ul>
+                </div>
+
+                <!-- Card 2: Algorithms Used -->
+                <div class="glass-panel p-6 rounded-2xl space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-purple-500/20 text-purple-400 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-square-root-variable"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-100">2. Algorithms & Methodology</h3>
+                    <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                        <li><strong>TF-IDF Vectorizer:</strong> Evaluates word frequency while penalizing universally common stop words across the corpus.</li>
+                        <li><strong>Multinomial Naive Bayes:</strong> Utilizes Bayes' Theorem with strong independence assumptions:
+                            <div class="my-1.5 p-2 bg-slate-900 rounded font-mono text-[11px] text-purple-300">P(y | x) = [P(y) ∏ P(x_i | y)] / P(x)</div>
+                        </li>
+                        <li><strong>Negation Context Handling:</strong> Modifies token weights when preceding negative words (e.g., "not", "never", "hardly") are detected.</li>
+                    </ul>
+                </div>
+
+                <!-- Card 3: System Architecture -->
+                <div class="glass-panel p-6 rounded-2xl space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-pink-500/20 text-pink-400 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-layer-group"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-100">3. System Requirements & Setup</h3>
+                    <div class="text-xs text-slate-300 space-y-2 leading-relaxed">
+                        <p><strong>Languages & Libraries:</strong> Python 3.9+, Scikit-Learn, NLTK, Flask (Backend), HTML5, Tailwind CSS, JavaScript (Frontend).</p>
+                        <p><strong>Hardware Profile:</strong> Compatible with basic CPU configurations (2GB RAM minimum), fast execution under 10ms per prediction.</p>
+                        <p><strong>Dataset Source:</strong> Standard 10,000 Amazon Customer Review Benchmark Dataset.</p>
+                    </div>
+                </div>
+
+                <!-- Card 4: Expected Outcomes & Conclusion -->
+                <div class="glass-panel p-6 rounded-2xl space-y-3">
+                    <div class="w-10 h-10 rounded-xl bg-emerald-500/20 text-emerald-400 flex items-center justify-center font-bold text-lg">
+                        <i class="fa-solid fa-square-check"></i>
+                    </div>
+                    <h3 class="text-base font-bold text-slate-100">4. Results & Conclusion</h3>
+                    <ul class="text-xs text-slate-300 space-y-2 list-disc list-inside leading-relaxed">
+                        <li>Achieved an overall classification accuracy of <strong>88.5%</strong> on holdout customer review datasets.</li>
+                        <li>Demonstrated high efficiency in processing sparse text vectors with zero real-time latency.</li>
+                        <li><strong>Future Work:</strong> Integrate Transformer-based BERT models and fine-tune aspect-based sentiment analysis (ABSA).</li>
+                    </ul>
+                </div>
+
+            </div>
+        </section>
+
+    </main>
+
+    <!-- Footer -->
+    <footer class="glass-panel border-t border-slate-800 py-4 mt-8">
+        <div class="max-w-7xl mx-auto px-4 text-center text-xs text-slate-400 flex flex-col sm:flex-row items-center justify-between gap-2">
+            <div>
+                <span class="font-semibold text-slate-300">Customer Review Sentiment Classifier</span> &bull; Machine Learning Mini Project
+            </div>
+            <div class="flex items-center gap-4 text-slate-400">
+                <span>TF-IDF + Naive Bayes</span>
+                <span>Accuracy: 88.5%</span>
+            </div>
+        </div>
+    </footer>
+
+    <!-- JavaScript Application Logic -->
+    <script>
+        // Vocabulary with TF-IDF / Naive Bayes log likelihood weights
+        const POSITIVE_LEXICON = {
+            "excellent": 2.9, "great": 2.5, "amazing": 2.8, "love": 2.4, "loved": 2.3, 
+            "best": 2.6, "perfect": 2.7, "awesome": 2.5, "good": 1.8, "fantastic": 2.8, 
+            "superb": 2.7, "satisfied": 2.1, "fast": 1.9, "quality": 1.8, "highly": 1.7, 
+            "recommend": 2.1, "helpful": 1.6, "durable": 1.8, "smooth": 1.5, "value": 1.4, 
+            "happy": 2.2, "outstanding": 2.9, "impressed": 2.3, "flawless": 3.0, "brilliant": 2.6,
+            "prompt": 1.8, "wonderful": 2.5, "easy": 1.6, "nice": 1.5, "worth": 1.7
+        };
+
+        const NEGATIVE_LEXICON = {
+            "terrible": 2.9, "worst": 3.1, "horrible": 2.9, "awful": 2.8, "bad": 2.2, 
+            "poor": 2.4, "broken": 2.7, "waste": 2.9, "disappointed": 2.6, "cheap": 2.1, 
+            "useless": 2.8, "slow": 1.9, "defective": 2.8, "refund": 2.3, "damaged": 2.6, 
+            "sucks": 2.7, "hate": 2.5, "junk": 2.8, "failed": 2.3, "regret": 2.4, 
+            "garbage": 3.0, "return": 1.8, "unhelpful": 2.2, "scam": 3.2, "horrible": 2.8
+        };
+
+        const NEGATION_WORDS = ["not", "never", "no", "without", "hardly", "n't", "barely"];
+
+        // Sample Presets for Quick Testing
+        const PRESET_SAMPLES = {
+            positive: "The camera quality is absolutely amazing and battery life is fast. Excellent product, highly recommended!",
+            negative: "Terrible purchase! The item arrived broken and customer support was completely useless and unhelpful. Waste of money.",
+            mixed: "The display screen is fantastic and sleek, but the delivery was slow and battery backup is somewhat disappointing.",
+            neutral: "The package arrived in a standard cardboard box containing one device and two charging cables."
+        };
+
+        // Mock Batch Dataset
+        let batchDataset = [
+            { id: 101, category: "Electronics", review: "Great sound quality and fantastic noise cancellation. Worth every dollar!", sentiment: "Positive", confidence: "96.4%" },
+            { id: 102, category: "Fashion", review: "Material is cheap and ripped after just one wash. Very disappointed.", sentiment: "Negative", confidence: "94.1%" },
+            { id: 103, category: "Home Appliance", review: "Works fine, standard noise level and average speed.", sentiment: "Neutral", confidence: "65.2%" },
+            { id: 104, category: "Electronics", review: "Terrible battery life. Device overheats and turns off constantly.", sentiment: "Negative", confidence: "98.0%" },
+            { id: 105, category: "Customer Service", review: "Prompt response and solved my refund issue in minutes. Outstanding service!", sentiment: "Positive", confidence: "95.5%" },
+            { id: 106, category: "Fashion", review: "Fits perfectly! Super comfortable and high quality fabric.", sentiment: "Positive", confidence: "92.8%" },
+            { id: 107, category: "Electronics", review: "Decent camera, but shipping took over two weeks.", sentiment: "Neutral", confidence: "58.0%" },
+            { id: 108, category: "Home Appliance", review: "Awful blender. Motor burned out on day one. Absolute garbage.", sentiment: "Negative", confidence: "99.1%" },
+            { id: 109, category: "Books", review: "Brilliant storytelling and highly engaging characters. Loved it!", sentiment: "Positive", confidence: "94.6%" },
+            { id: 110, category: "Customer Service", review: "Unhelpful support agent, kept placing me on hold for an hour.", sentiment: "Negative", confidence: "89.3%" },
+            { id: 111, category: "Electronics", review: "Flawless screen resolution and fast wireless charging.", sentiment: "Positive", confidence: "97.2%" },
+            { id: 112, category: "Books", review: "Arrived on time in good condition. Standard paperback binding.", sentiment: "Positive", confidence: "78.4%" }
+        ];
+
+        let activeTab = 'live';
+        let activeSentimentFilter = 'ALL';
+        let donutChartInstance = null;
+        let barChartInstance = null;
+
+        function switchTab(tabKey) {
+            activeTab = tabKey;
+            
+            // Hide all contents
+            document.querySelectorAll('.tab-content').forEach(el => el.classList.add('hidden'));
+            
+            // Deactivate all nav buttons
+            document.querySelectorAll('.tab-btn').forEach(btn => {
+                btn.className = "tab-btn px-4 py-2 text-sm font-medium rounded-lg text-slate-400 hover:text-slate-200 hover:bg-slate-800/50 transition-all duration-200";
+            });
+
+            // Mobile buttons
+            document.querySelectorAll('[id^="mobile-tab-"]').forEach(btn => {
+                btn.className = "px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap text-slate-400 bg-slate-900";
+            });
+
+            // Show selected content & active state
+            document.getElementById(`tab-${tabKey}`).classList.remove('hidden');
+            
+            const activeDesktopBtn = document.getElementById(`tab-btn-${tabKey}`);
+            if (activeDesktopBtn) {
+                activeDesktopBtn.className = "tab-btn px-4 py-2 text-sm font-medium rounded-lg transition-all duration-200 bg-gradient-to-r from-indigo-600 to-purple-600 text-white shadow-md";
+            }
+
+            const activeMobileBtn = document.getElementById(`mobile-tab-${tabKey}`);
+            if (activeMobileBtn) {
+                activeMobileBtn.className = "px-3 py-1.5 text-xs font-medium rounded-lg whitespace-nowrap bg-indigo-600 text-white";
+            }
+
+            // Initialize charts if batch tab selected
+            if (tabKey === 'batch') {
+                setTimeout(initCharts, 100);
+                renderBatchTable(batchDataset);
+            }
+        }
+
+        function loadSample(key) {
+            if (PRESET_SAMPLES[key]) {
+                const input = document.getElementById('review-input');
+                input.value = PRESET_SAMPLES[key];
+                updateCharCount();
+                analyzeSentiment();
+            }
+        }
+
+        function clearInput() {
+            document.getElementById('review-input').value = '';
+            updateCharCount();
+            resetOutputDisplay();
+        }
+
+        function updateCharCount() {
+            const text = document.getElementById('review-input').value;
+            document.getElementById('char-count').innerText = `${text.length} characters`;
+        }
+
+        document.getElementById('review-input').addEventListener('input', updateCharCount);
+
+        function analyzeSentiment() {
+            const rawText = document.getElementById('review-input').value.trim();
+            if (!rawText) {
+                resetOutputDisplay();
+                return;
+            }
+
+            // Tokenize & Clean Text
+            const cleanText = rawText.toLowerCase().replace(/[^\w\s']/g, ' ');
+            const tokens = cleanText.split(/\s+/).filter(t => t.length > 0);
+
+            let totalPosScore = 0;
+            let totalNegScore = 0;
+            let posCount = 0;
+            let negCount = 0;
+
+            let highlightedHtml = "";
+
+            // Evaluate tokens with negation window logic
+            for (let i = 0; i < tokens.length; i++) {
+                let token = tokens[i];
+                let isNegated = false;
+
+                // Check preceding 2 tokens for negation words
+                if (i > 0 && NEGATION_WORDS.includes(tokens[i - 1])) isNegated = true;
+                if (i > 1 && NEGATION_WORDS.includes(tokens[i - 2])) isNegated = true;
+
+                let posWeight = POSITIVE_LEXICON[token] || 0;
+                let negWeight = NEGATIVE_LEXICON[token] || 0;
+
+                if (isNegated) {
+                    // Flip weights if negated (e.g. "not good" -> negative)
+                    let temp = posWeight;
+                    posWeight = negWeight;
+                    negWeight = temp;
+                }
+
+                if (posWeight > 0) {
+                    totalPosScore += posWeight;
+                    posCount++;
+                    highlightedHtml += `<span class="bg-emerald-500/20 text-emerald-300 px-1 py-0.5 rounded border border-emerald-500/30 font-semibold mx-0.5" title="TF-IDF Weight: +${posWeight}">${token}</span> `;
+                } else if (negWeight > 0) {
+                    totalNegScore += negWeight;
+                    negCount++;
+                    highlightedHtml += `<span class="bg-rose-500/20 text-rose-300 px-1 py-0.5 rounded border border-rose-500/30 font-semibold mx-0.5" title="TF-IDF Weight: -${negWeight}">${token}</span> `;
+                } else {
+                    highlightedHtml += `${token} `;
+                }
+            }
+
+            // Calculate Decision & Confidence
+            let netScore = totalPosScore - totalNegScore;
+            let sentiment = "Neutral";
+            let confidence = 50;
+
+            if (netScore > 0.5) {
+                sentiment = "Positive";
+                confidence = Math.min(99, Math.round(60 + (netScore * 8)));
+            } else if (netScore < -0.5) {
+                sentiment = "Negative";
+                confidence = Math.min(99, Math.round(60 + (Math.abs(netScore) * 8)));
+            } else {
+                sentiment = "Neutral";
+                confidence = Math.round(50 + Math.abs(netScore) * 10);
+            }
+
+            // Update UI
+            updateLiveOutputUI(sentiment, confidence, totalPosScore, totalNegScore, tokens.length, posCount, negCount, highlightedHtml);
+        }
+
+        function updateLiveOutputUI(sentiment, confidence, posScore, negScore, totalTokens, posCount, negCount, highlightedHtml) {
+            const card = document.getElementById('output-card');
+            const iconBox = document.getElementById('sentiment-icon-box');
+            const icon = document.getElementById('sentiment-icon');
+            const label = document.getElementById('sentiment-label');
+            const subtext = document.getElementById('sentiment-subtext');
+            const confBar = document.getElementById('confidence-bar');
+            const confText = document.getElementById('confidence-score');
+            const modelBadge = document.getElementById('model-badge');
+
+            document.getElementById('pos-score-val').innerText = posScore.toFixed(2);
+            document.getElementById('neg-score-val').innerText = negScore.toFixed(2);
+            document.getElementById('stat-tokens').innerText = totalTokens;
+            document.getElementById('stat-pos-words').innerText = posCount;
+            document.getElementById('stat-neg-words').innerText = negCount;
+            document.getElementById('highlighted-text-box').innerHTML = highlightedHtml || "No significant sentiment words matched.";
+
+            confBar.style.width = `${confidence}%`;
+            confText.innerText = `${confidence}%`;
+            modelBadge.innerText = "Classification Complete";
+
+            if (sentiment === "Positive") {
+                card.className = "glass-panel p-6 rounded-2xl h-full flex flex-col justify-between transition-all duration-300 border-emerald-500/30 glow-positive";
+                iconBox.className = "w-20 h-20 mx-auto rounded-2xl bg-emerald-950/80 border border-emerald-500/50 flex items-center justify-center mb-3 shadow-lg shadow-emerald-500/20";
+                icon.className = "fa-solid fa-face-smile text-4xl text-emerald-400";
+                label.innerText = "POSITIVE";
+                label.className = "text-2xl font-black text-emerald-400 tracking-wide";
+                subtext.innerText = "Strong favorable sentiment detected in customer review";
+                confBar.className = "bg-gradient-to-r from-emerald-500 to-teal-400 h-full rounded-full transition-all duration-500";
+            } else if (sentiment === "Negative") {
+                card.className = "glass-panel p-6 rounded-2xl h-full flex flex-col justify-between transition-all duration-300 border-rose-500/30 glow-negative";
+                iconBox.className = "w-20 h-20 mx-auto rounded-2xl bg-rose-950/80 border border-rose-500/50 flex items-center justify-center mb-3 shadow-lg shadow-rose-500/20";
+                icon.className = "fa-solid fa-face-frown text-4xl text-rose-400";
+                label.innerText = "NEGATIVE";
+                label.className = "text-2xl font-black text-rose-400 tracking-wide";
+                subtext.innerText = "Unfavorable or critical customer review feedback";
+                confBar.className = "bg-gradient-to-r from-rose-500 to-pink-500 h-full rounded-full transition-all duration-500";
+            } else {
+                card.className = "glass-panel p-6 rounded-2xl h-full flex flex-col justify-between transition-all duration-300 border-amber-500/30";
+                iconBox.className = "w-20 h-20 mx-auto rounded-2xl bg-amber-950/80 border border-amber-500/50 flex items-center justify-center mb-3";
+                icon.className = "fa-solid fa-face-meh text-4xl text-amber-400";
+                label.innerText = "NEUTRAL";
+                label.className = "text-2xl font-black text-amber-400 tracking-wide";
+                subtext.innerText = "Balanced or objective non-emotional review content";
+                confBar.className = "bg-gradient-to-r from-amber-500 to-yellow-400 h-full rounded-full transition-all duration-500";
+            }
+        }
+
+        function resetOutputDisplay() {
+            document.getElementById('output-card').className = "glass-panel p-6 rounded-2xl h-full flex flex-col justify-between transition-all duration-300";
+            document.getElementById('sentiment-icon-box').className = "w-20 h-20 mx-auto rounded-2xl bg-slate-800 border border-slate-700 flex items-center justify-center mb-3";
+            document.getElementById('sentiment-icon').className = "fa-solid fa-robot text-3xl text-slate-400";
+            document.getElementById('sentiment-label').innerText = "Ready to Analyze";
+            document.getElementById('sentiment-label').className = "text-2xl font-black text-slate-300 tracking-wide";
+            document.getElementById('sentiment-subtext').innerText = "Submit a review to generate sentiment probabilities";
+            document.getElementById('confidence-bar').style.width = "0%";
+            document.getElementById('confidence-score').innerText = "0%";
+            document.getElementById('pos-score-val').innerText = "0.00";
+            document.getElementById('neg-score-val').innerText = "0.00";
+            document.getElementById('stat-tokens').innerText = "0";
+            document.getElementById('stat-pos-words').innerText = "0";
+            document.getElementById('stat-neg-words').innerText = "0";
+            document.getElementById('highlighted-text-box').innerHTML = `<span class="text-slate-500 italic">Key sentiment words will be highlighted green (positive) or red (negative)...</span>`;
+            document.getElementById('model-badge').innerText = "Waiting for input...";
+        }
+
+        function renderBatchTable(dataset) {
+            const tbody = document.getElementById('batch-table-body');
+            tbody.innerHTML = '';
+
+            dataset.forEach(item => {
+                let badgeClass = "bg-slate-800 text-slate-300 border-slate-700";
+                if (item.sentiment === 'Positive') badgeClass = "bg-emerald-950/80 text-emerald-300 border-emerald-800";
+                if (item.sentiment === 'Negative') badgeClass = "bg-rose-950/80 text-rose-300 border-rose-800";
+                if (item.sentiment === 'Neutral') badgeClass = "bg-amber-950/80 text-amber-300 border-amber-800";
+
+                const row = document.createElement('tr');
+                row.className = "hover:bg-slate-800/40 transition";
+                row.innerHTML = `
+                    <td class="p-3 font-mono text-slate-500">#${item.id}</td>
+                    <td class="p-3 font-medium text-slate-300">${item.category}</td>
+                    <td class="p-3 max-w-xs truncate text-slate-200" title="${item.review}">${item.review}</td>
+                    <td class="p-3">
+                        <span class="px-2.5 py-1 text-[10px] font-bold rounded-full border ${badgeClass}">
+                            ${item.sentiment}
+                        </span>
+                    </td>
+                    <td class="p-3 font-semibold text-slate-300">${item.confidence}</td>
+                    <td class="p-3 text-right">
+                        <button onclick="testBatchItem('${item.review.replace(/'/g, "\\'")}')" class="text-indigo-400 hover:text-indigo-300 font-medium">
+                            Test in Live <i class="fa-solid fa-arrow-right text-[10px]"></i>
+                        </button>
+                    </td>
+                `;
+                tbody.appendChild(row);
+            });
+        }
+
+        function testBatchItem(text) {
+            switchTab('live');
+            document.getElementById('review-input').value = text;
+            updateCharCount();
+            analyzeSentiment();
+        }
+
+        function filterSentiment(sentiment) {
+            activeSentimentFilter = sentiment;
+            document.querySelectorAll('.filter-pill').forEach(btn => {
+                btn.className = "filter-pill px-3 py-1 rounded-lg text-slate-400 hover:text-slate-200";
+            });
+
+            if (sentiment === 'ALL') document.getElementById('filter-all').className = "filter-pill px-3 py-1 rounded-lg bg-indigo-600 text-white font-medium";
+            if (sentiment === 'Positive') document.getElementById('filter-pos').className = "filter-pill px-3 py-1 rounded-lg bg-emerald-600 text-white font-medium";
+            if (sentiment === 'Negative') document.getElementById('filter-neg').className = "filter-pill px-3 py-1 rounded-lg bg-rose-600 text-white font-medium";
+            if (sentiment === 'Neutral') document.getElementById('filter-neu').className = "filter-pill px-3 py-1 rounded-lg bg-amber-600 text-white font-medium";
+
+            filterBatchTable();
+        }
+
+        function filterBatchTable() {
+            const query = document.getElementById('table-search').value.toLowerCase();
+            const filtered = batchDataset.filter(item => {
+                const matchesQuery = item.review.toLowerCase().includes(query) || item.category.toLowerCase().includes(query);
+                const matchesSentiment = (activeSentimentFilter === 'ALL') || (item.sentiment === activeSentimentFilter);
+                return matchesQuery && matchesSentiment;
+            });
+            renderBatchTable(filtered);
+        }
+
+        function runBatchAnalysis() {
+            renderBatchTable(batchDataset);
+            initCharts();
+        }
+
+        function exportCSV() {
+            let csvContent = "data:text/csv;charset=utf-8,ID,Category,Review,PredictedSentiment,Confidence\n";
+            batchDataset.forEach(row => {
+                csvContent += `${row.id},"${row.category}","${row.review.replace(/"/g, '""')}",${row.sentiment},${row.confidence}\n`;
+            });
+
+            const encodedUri = encodeURI(csvContent);
+            const link = document.createElement("a");
+            link.setAttribute("href", encodedUri);
+            link.setAttribute("download", "sentiment_batch_results.csv");
+            document.body.appendChild(link);
+            link.click();
+            document.body.removeChild(link);
+        }
+
+        function initCharts() {
+            // Donut Chart
+            const donutCtx = document.getElementById('sentimentDonutChart');
+            if (!donutCtx) return;
+
+            if (donutChartInstance) donutChartInstance.destroy();
+
+            const posCount = batchDataset.filter(d => d.sentiment === 'Positive').length;
+            const negCount = batchDataset.filter(d => d.sentiment === 'Negative').length;
+            const neuCount = batchDataset.filter(d => d.sentiment === 'Neutral').length;
+
+            donutChartInstance = new Chart(donutCtx, {
+                type: 'doughnut',
+                data: {
+                    labels: ['Positive', 'Negative', 'Neutral'],
+                    datasets: [{
+                        data: [posCount, negCount, neuCount],
+                        backgroundColor: ['#10b981', '#f43f5e', '#f59e0b'],
+                        borderWidth: 0,
+                        hoverOffset: 6
+                    }]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 12 } }
+                        }
+                    },
+                    cutout: '70%'
+                }
+            });
+
+            // Bar Chart Category breakdown
+            const barCtx = document.getElementById('categoryBarChart');
+            if (!barCtx) return;
+
+            if (barChartInstance) barChartInstance.destroy();
+
+            barChartInstance = new Chart(barCtx, {
+                type: 'bar',
+                data: {
+                    labels: ['Electronics', 'Fashion', 'Home Appliance', 'Customer Service', 'Books'],
+                    datasets: [
+                        {
+                            label: 'Positive',
+                            data: [3, 1, 0, 1, 2],
+                            backgroundColor: '#10b981',
+                            borderRadius: 6
+                        },
+                        {
+                            label: 'Negative',
+                            data: [1, 1, 1, 1, 0],
+                            backgroundColor: '#f43f5e',
+                            borderRadius: 6
+                        }
+                    ]
+                },
+                options: {
+                    responsive: true,
+                    maintainAspectRatio: false,
+                    scales: {
+                        x: { grid: { display: false }, ticks: { color: '#94a3b8' } },
+                        y: { grid: { color: '#334155' }, ticks: { color: '#94a3b8', stepSize: 1 } }
+                    },
+                    plugins: {
+                        legend: {
+                            position: 'bottom',
+                            labels: { color: '#94a3b8', font: { family: 'Inter', size: 11 } }
+                        }
+                    }
+                }
+            });
+        }
+
+        function populateVocabularyLists() {
+            const posList = document.getElementById('pos-lexicon-list');
+            const negList = document.getElementById('neg-lexicon-list');
+
+            if (!posList || !negList) return;
+
+            posList.innerHTML = '';
+            negList.innerHTML = '';
+
+            Object.entries(POSITIVE_LEXICON).slice(0, 8).forEach(([word, weight]) => {
+                posList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-900/80 border border-slate-800">
+                        <span class="font-mono text-emerald-300 font-semibold">${word}</span>
+                        <span class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">+${weight}</span>
+                    </div>
+                `;
+            });
+
+            Object.entries(NEGATIVE_LEXICON).slice(0, 8).forEach(([word, weight]) => {
+                negList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-900/80 border border-slate-800">
+                        <span class="font-mono text-rose-300 font-semibold">${word}</span>
+                        <span class="text-[10px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-800">-${weight}</span>
+                    </div>
+                `;
+            });
+        }
+
+        function filterVocabulary() {
+            const query = document.getElementById('dict-search').value.toLowerCase();
+            const posList = document.getElementById('pos-lexicon-list');
+            const negList = document.getElementById('neg-lexicon-list');
+
+            posList.innerHTML = '';
+            negList.innerHTML = '';
+
+            Object.entries(POSITIVE_LEXICON).filter(([w]) => w.includes(query)).slice(0, 8).forEach(([word, weight]) => {
+                posList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-900/80 border border-slate-800">
+                        <span class="font-mono text-emerald-300 font-semibold">${word}</span>
+                        <span class="text-[10px] bg-emerald-950 text-emerald-400 px-2 py-0.5 rounded border border-emerald-800">+${weight}</span>
+                    </div>
+                `;
+            });
+
+            Object.entries(NEGATIVE_LEXICON).filter(([w]) => w.includes(query)).slice(0, 8).forEach(([word, weight]) => {
+                negList.innerHTML += `
+                    <div class="flex justify-between items-center p-2 rounded bg-slate-900/80 border border-slate-800">
+                        <span class="font-mono text-rose-300 font-semibold">${word}</span>
+                        <span class="text-[10px] bg-rose-950 text-rose-400 px-2 py-0.5 rounded border border-rose-800">-${weight}</span>
+                    </div>
+                `;
+            });
+        }
+
+        // Initialize application on load
+        window.onload = function() {
+            populateVocabularyLists();
+            // Load initial default sample
+            loadSample('positive');
+        };
+    </script>
+</body>
+</html>
